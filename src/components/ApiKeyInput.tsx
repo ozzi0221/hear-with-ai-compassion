@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { ApiConfig } from "@/types/chat";
+import { Eye, EyeOff } from "lucide-react";
 
 interface ApiKeyInputProps {
   apiConfig: ApiConfig;
@@ -15,6 +16,7 @@ interface ApiKeyInputProps {
 
 export default function ApiKeyInput({ apiConfig, onSave, open, onOpenChange }: ApiKeyInputProps) {
   const [apiKey, setApiKey] = useState(apiConfig.apiKey || "");
+  const [showApiKey, setShowApiKey] = useState(false);
 
   const handleSave = () => {
     onSave({
@@ -22,6 +24,10 @@ export default function ApiKeyInput({ apiConfig, onSave, open, onOpenChange }: A
       isConfigured: apiKey.trim().length > 0
     });
     onOpenChange(false);
+  };
+
+  const toggleApiKeyVisibility = () => {
+    setShowApiKey(!showApiKey);
   };
 
   return (
@@ -39,14 +45,26 @@ export default function ApiKeyInput({ apiConfig, onSave, open, onOpenChange }: A
             <Label htmlFor="apiKey" className="text-right">
               API 키
             </Label>
-            <Input
-              id="apiKey"
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Gemini API 키를 입력하세요"
-              className="col-span-3"
-            />
+            <div className="col-span-3 flex items-center">
+              <Input
+                id="apiKey"
+                type={showApiKey ? "text" : "password"}
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="Gemini API 키를 입력하세요"
+                className="flex-1"
+              />
+              <Button 
+                type="button" 
+                variant="ghost" 
+                size="icon"
+                className="ml-2"
+                onClick={toggleApiKeyVisibility}
+                title={showApiKey ? "API 키 숨기기" : "API 키 보기"}
+              >
+                {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
           
           <div className="col-span-4 text-xs text-muted-foreground mt-2">
