@@ -14,3 +14,8 @@ export interface EmotionSummary {
   intensity: number;
   notes: string;
 }
+
+export interface ApiConfig {
+  apiKey: string;
+  isConfigured: boolean;
+}
