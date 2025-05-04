@@ -71,6 +71,7 @@ export default function ApiKeyInput({ apiConfig, onSave, open, onOpenChange }: A
             <p>Gemini API 키는 로컬에 저장되며 외부로 전송되지 않습니다.</p>
             <p className="mt-1">API 키가 없으신가요? <a href="https://ai.google.dev/" target="_blank" rel="noreferrer" className="text-primary hover:underline">Google AI 스튜디오</a>에서 발급받으세요.</p>
             <p className="mt-1">API 키 형식: "AI..." 로 시작하는 문자열입니다.</p>
+            <p className="mt-1 text-amber-500">주의: 현재 "gemini-1.5-flash" 모델을 사용합니다. 사용 가능한 API 키인지 확인하세요.</p>
           </div>
         </div>
         

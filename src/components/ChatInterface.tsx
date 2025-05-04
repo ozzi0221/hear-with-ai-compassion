@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import ChatHeader from "./ChatHeader";
 import ChatInputBox from "./ChatInputBox";
@@ -63,8 +62,8 @@ export default function ChatInterface() {
     setIsLoading(true);
     
     try {
-      // 실제 Gemini API 호출
-      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent", {
+      // 올바른 Gemini API 호출 (수정된 부분)
+      const response = await fetch("https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -90,7 +89,7 @@ export default function ChatInterface() {
 2. 사용자의 감정 단서를 포착하고, 공감 표현
 3. 문제의 원인을 부드럽게 유도 (경험/기억/상황)
 4. 긍정적인 리마인드 or 선택지 제안 (예: "혹시 이런 식으로 풀어볼까요?")
-5. 감정 요약 (예: "지금은 외로움과 불안이 섞여 있는 것 같아요")
+5. 감정 요약 (���: "지금은 외로움과 불안이 섞여 있는 것 같아요")
 6. 기록용으로 사용자 감정/상태를 간단히 정리한 요약 생성
 
 대화 톤:
