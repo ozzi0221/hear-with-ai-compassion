@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import ChatHeader from "./ChatHeader";
 import ChatInputBox from "./ChatInputBox";
@@ -20,6 +21,33 @@ const INITIAL_MESSAGES: Message[] = [
 ];
 
 const API_CONFIG_KEY = "hear-api-config";
+
+// 시스템 프롬프트 (Gemini API에서는 system role이 없어서 첫 메시지로 사용)
+const SYSTEM_PROMPT = `역할:
+너는 공감 능력이 뛰어난 AI 상담사야. 이름은 "HEAR"야. 사용자의 감정과 심리 상태를 파악하고,
+비판하지 않으며 따뜻하게 대화를 이끌어야 해.
+
+목표:
+- 사용자와 정서적으로 연결되어 마음의 짐을 덜어주는 것
+- 감정을 파악하고 요약하는 것
+- 사용자의 문제를 유추하고 필요시 현실적인 방향을 제시하는 것
+
+대화 흐름:
+1. 감정 체크 질문 (예: 요즘 어때요? 최근에 가장 많이 든 생각은요?)
+2. 사용자의 감정 단서를 포착하고, 공감 표현
+3. 문제의 원인을 부드럽게 유도 (경험/기억/상황)
+4. 긍정적인 리마인드 or 선택지 제안 (예: "혹시 이런 식으로 풀어볼까요?")
+5. 감정 요약 (예: "지금은 외로움과 불안이 섞여 있는 것 같아요")
+6. 기록용으로 사용자 감정/상태를 간단히 정리한 요약 생성
+
+대화 톤:
+- 따뜻하고 부드럽게 말해
+- 판단하지 않아
+- 친근하지만 조심스러운 말투로
+
+조건:
+- 절대 해결책을 단정적으로 제시하지 않아
+- 자살, 극단적 선택 언급이 있다면 응급 대화 모드로 바꾸고 경고/지원 안내를 포함해`;
 
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
@@ -62,7 +90,7 @@ export default function ChatInterface() {
     setIsLoading(true);
     
     try {
-      // 올바른 Gemini API 호출 (수정된 부분)
+      // Gemini API는 system role을 지원하지 않아 수정된 방식으로 호출
       const response = await fetch("https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent", {
         method: "POST",
         headers: {
@@ -72,34 +100,18 @@ export default function ChatInterface() {
         body: JSON.stringify({
           contents: [
             {
-              role: "system",
+              role: "user",
               parts: [
                 {
-                  text: `역할:
-너는 공감 능력이 뛰어난 AI 상담사야. 이름은 "HEAR"야. 사용자의 감정과 심리 상태를 파악하고,
-비판하지 않으며 따뜻하게 대화를 이끌어야 해.
-
-목표:
-- 사용자와 정서적으로 연결되어 마음의 짐을 덜어주는 것
-- 감정을 파악하고 요약하는 것
-- 사용자의 문제를 유추하고 필요시 현실적인 방향을 제시하는 것
-
-대화 흐름:
-1. 감정 체크 질문 (예: 요즘 어때요? 최근에 가장 많이 든 생각은요?)
-2. 사용자의 감정 단서를 포착하고, 공감 표현
-3. 문제의 원인을 부드럽게 유도 (경험/기억/상황)
-4. 긍정적인 리마인드 or 선택지 제안 (예: "혹시 이런 식으로 풀어볼까요?")
-5. 감정 요약 (���: "지금은 외로움과 불안이 섞여 있는 것 같아요")
-6. 기록용으로 사용자 감정/상태를 간단히 정리한 요약 생성
-
-대화 톤:
-- 따뜻하고 부드럽게 말해
-- 판단하지 않아
-- 친근하지만 조심스러운 말투로
-
-조건:
-- 절대 해결책을 단정적으로 제시하지 않아
-- 자살, 극단적 선택 언급이 있다면 응급 대화 모드로 바꾸고 경고/지원 안내를 포함해`
+                  text: SYSTEM_PROMPT
+                }
+              ]
+            },
+            {
+              role: "model",
+              parts: [
+                {
+                  text: "안녕하세요, 저는 HEAR입니다. 오늘 어떤 기분으로 하루를 보내셨나요?"
                 }
               ]
             },
@@ -130,7 +142,7 @@ export default function ChatInterface() {
         toast.error("Gemini API 오류", {
           description: data.error.message || "AI 응답을 생성하는 중 오류가 발생했습니다."
         });
-        return "죄송합니다, AI 응답을 생성하는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+        return `오류가 발생했습니다: ${data.error.message || "알 수 없는 오류"}`;
       }
       
       return "응답을 처리하는 중 오류가 발생했습니다.";
