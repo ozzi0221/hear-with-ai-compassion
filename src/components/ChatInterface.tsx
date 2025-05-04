@@ -11,6 +11,16 @@ import { nanoid } from "nanoid";
 import { toast } from "@/components/ui/sonner";
 import { generateGeminiResponse } from "@/lib/gemini-api";
 
+// 메시지 타입 정의 (gemini-api.ts와 동일하게 유지)
+interface MessagePart {
+  text: string;
+}
+
+interface MessageContent {
+  role: 'user' | 'model';
+  parts: MessagePart[];
+}
+
 const INITIAL_MESSAGES: Message[] = [
   {
     id: nanoid(),
@@ -80,20 +90,23 @@ export default function ChatInterface() {
     }
   };
   
-  const processAIResponse = async (userMessage: string): Promise<string> => {
+  const processAIResponse = async (userMessage: string): Promise<void> => {
     // Check if API is configured
     if (!apiConfig.isConfigured) {
       setApiKeyDialogOpen(true);
-      return "Gemini API 키를 먼저 설정해주세요.";
+      toast.error("API 키 필요", {
+        description: "Gemini API 키를 먼저 설정해주세요."
+      });
+      return;
     }
 
     setIsLoading(true);
     
     try {
-      // 이전 대화 내용을 구성합니다 (처음 메시지 제외하고 최근 5개로 제한)
-      const conversationHistory = messages
+      // 이전 대화 내용을 구성합니다 (최근 5개로 제한)
+      const conversationHistory: MessageContent[] = messages
         .slice(-5)  // 최근 5개 메시지만 포함
-        .map(msg => ({
+        .map((msg): MessageContent => ({
           role: msg.type === 'user' ? 'user' : 'model',
           parts: [{ text: msg.content }]
         }));
@@ -101,23 +114,30 @@ export default function ChatInterface() {
       const response = await generateGeminiResponse(
         userMessage,
         conversationHistory,
-        apiConfig.apiKey
+        apiConfig.apiKey,
+        SYSTEM_PROMPT
       );
       
-      return response;
+      const aiMessage: Message = {
+        id: nanoid(),
+        content: response,
+        type: "ai",
+        timestamp: new Date(),
+      };
+      
+      setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error("API 요청 중 오류 발생:", error);
       toast.error("API 요청 오류", {
-        description: "네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요."
+        description: error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다."
       });
-      return "네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.";
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSendMessage = async (content: string) => {
-    if (!content.trim()) return;
+    if (!content.trim() || isLoading) return;
     
     // Add user message
     const userMessage: Message = {
@@ -129,16 +149,8 @@ export default function ChatInterface() {
     
     setMessages(prev => [...prev, userMessage]);
     
-    // Generate and add AI response
-    const aiResponse = await processAIResponse(content);
-    const aiMessage: Message = {
-      id: nanoid(),
-      content: aiResponse,
-      type: "ai",
-      timestamp: new Date(),
-    };
-    
-    setMessages(prev => [...prev, aiMessage]);
+    // Generate AI response
+    await processAIResponse(content);
   };
 
   const scrollToBottom = () => {

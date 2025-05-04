@@ -1,4 +1,14 @@
 
+// 대화 내용 타입 정의
+interface MessagePart {
+  text: string;
+}
+
+interface MessageContent {
+  role: 'user' | 'model';
+  parts: MessagePart[];
+}
+
 // 시스템 프롬프트 (Gemini API에서는 system role이 없어서 첫 메시지로 사용)
 const SYSTEM_INSTRUCTION = `역할:
 너는 공감 능력이 뛰어난 AI 상담사야. 이름은 "HEAR"야. 사용자의 감정과 심리 상태를 파악하고,
@@ -26,27 +36,19 @@ const SYSTEM_INSTRUCTION = `역할:
 - 절대 해결책을 단정적으로 제시하지 않아
 - 자살, 극단적 선택 언급이 있다면 응급 대화 모드로 바꾸고 경고/지원 안내를 포함해`;
 
-// 대화 내용 타입 정의
-interface MessagePart {
-  text: string;
-}
-
-interface MessageContent {
-  role: 'user' | 'model';
-  parts: MessagePart[];
-}
-
 /**
  * Gemini API를 사용하여 AI 응답을 생성합니다.
  * @param userMessage 사용자의 현재 메시지
  * @param conversationHistory 이전 대화 내용 (최근 메시지만 포함)
  * @param apiKey Gemini API 키
+ * @param systemInstruction 시스템 프롬프트 (옵션) - 기본값으로 SYSTEM_INSTRUCTION 사용
  * @returns 생성된 AI 응답
  */
 export const generateGeminiResponse = async (
   userMessage: string,
   conversationHistory: MessageContent[] = [],
-  apiKey: string
+  apiKey: string,
+  systemInstruction: string = SYSTEM_INSTRUCTION
 ): Promise<string> => {
   try {
     // 새로운 대화인 경우 (기록이 없으면) 시스템 지침 포함
@@ -57,7 +59,7 @@ export const generateGeminiResponse = async (
       contents.push(
         {
           role: 'user',
-          parts: [{ text: SYSTEM_INSTRUCTION }]
+          parts: [{ text: systemInstruction }]
         },
         {
           role: 'model',
