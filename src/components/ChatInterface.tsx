@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import ChatHeader from "./ChatHeader";
 import ChatInputBox from "./ChatInputBox";
@@ -10,6 +9,7 @@ import { Button } from "./ui/button";
 import { Settings } from "lucide-react";
 import { nanoid } from "nanoid";
 import { toast } from "@/components/ui/sonner";
+import { generateGeminiResponse } from "@/lib/gemini-api";
 
 const INITIAL_MESSAGES: Message[] = [
   {
@@ -80,7 +80,7 @@ export default function ChatInterface() {
     }
   };
   
-  const generateAIResponse = async (userMessage: string): Promise<string> => {
+  const processAIResponse = async (userMessage: string): Promise<string> => {
     // Check if API is configured
     if (!apiConfig.isConfigured) {
       setApiKeyDialogOpen(true);
@@ -90,62 +90,21 @@ export default function ChatInterface() {
     setIsLoading(true);
     
     try {
-      // Gemini API는 system role을 지원하지 않아 수정된 방식으로 호출
-      const response = await fetch("https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiConfig.apiKey
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [
-                {
-                  text: SYSTEM_PROMPT
-                }
-              ]
-            },
-            {
-              role: "model",
-              parts: [
-                {
-                  text: "안녕하세요, 저는 HEAR입니다. 오늘 어떤 기분으로 하루를 보내셨나요?"
-                }
-              ]
-            },
-            {
-              role: "user",
-              parts: [{ text: userMessage }]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1024,
-          }
-        })
-      });
+      // 이전 대화 내용을 구성합니다 (처음 메시지 제외하고 최근 5개로 제한)
+      const conversationHistory = messages
+        .slice(-5)  // 최근 5개 메시지만 포함
+        .map(msg => ({
+          role: msg.type === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.content }]
+        }));
       
-      const data = await response.json();
-      console.log("Gemini API 응답:", data);
+      const response = await generateGeminiResponse(
+        userMessage,
+        conversationHistory,
+        apiConfig.apiKey
+      );
       
-      // API 응답 처리
-      if (data.candidates && data.candidates.length > 0) {
-        const aiResponse = data.candidates[0].content.parts[0].text;
-        return aiResponse;
-      } else if (data.error) {
-        // API 오류 처리
-        console.error("Gemini API 오류:", data.error);
-        toast.error("Gemini API 오류", {
-          description: data.error.message || "AI 응답을 생성하는 중 오류가 발생했습니다."
-        });
-        return `오류가 발생했습니다: ${data.error.message || "알 수 없는 오류"}`;
-      }
-      
-      return "응답을 처리하는 중 오류가 발생했습니다.";
+      return response;
     } catch (error) {
       console.error("API 요청 중 오류 발생:", error);
       toast.error("API 요청 오류", {
@@ -171,7 +130,7 @@ export default function ChatInterface() {
     setMessages(prev => [...prev, userMessage]);
     
     // Generate and add AI response
-    const aiResponse = await generateAIResponse(content);
+    const aiResponse = await processAIResponse(content);
     const aiMessage: Message = {
       id: nanoid(),
       content: aiResponse,
